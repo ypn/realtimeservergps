@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Simple Polygon</title>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io('192.168.0.56:3000');
+        socket.on('broastcast', function (data) {
+          console.log(data);
+        });
+    </script>
+    <script>
+
+      //This example creates a simple polygon representing the Bermuda Triangle.
+
+      function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 17,
+          center: {lat: 20.906233, lng: 106.630316},
+          mapTypeId: 'satellite',
+          tilt: 45
+        });
+        map.setTilt(45);
+
+        var infowindow = new google.maps.InfoWindow({
+          content: 'Nhà cân'
+        });
+
+        var baipheeee=  new google.maps.InfoWindow({
+          content: 'Bãi phế'
+        });
+
+        var marker = new google.maps.Marker({
+          position: {
+            lat: 20.906038,
+            lng : 106.631577
+          },
+          map: map
+        });
+
+        marker.addListener('click', function() {
+          infowindow.open(map, marker);
+        });
+
+        var cho  = new google.maps.Marker({
+          position:{
+            lat:20.904903,
+            lng:106.626052
+          },
+          map: map
+        });
+
+        cho.addListener('click', function() {
+          baipheeee.open(map, cho);
+        });
+
+        // Define the LatLng coordinates for the polygon's path.
+        var triangleCoords = [
+          {lat: 20.905927, lng: 106.631447},
+          {lat: 20.906113, lng: 106.631465},
+          {lat: 20.906110, lng:  106.631668},
+          {lat:20.905947, lng:106.631655}
+        ];
+
+        // Construct the polygon.
+        var bermudaTriangle = new google.maps.Polygon({
+          paths: triangleCoords,
+          strokeColor: '#66ccff',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#66ccff',
+          fillOpacity: 0.35
+        });
+
+        var baiphe = [
+          {lat: 20.905912, lng: 106.625503},
+          {lat: 20.904066, lng: 106.625495},
+          {lat: 20.904053, lng:   106.626820},
+          {lat:20.905896, lng:106.626787}
+        ];
+
+        var baiphee = new google.maps.Polygon({
+          paths: baiphe,
+          strokeColor: '#FF0000',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#FF0000',
+          fillOpacity: 0.35
+        });
+
+        var latlng_sanbong = [
+          {lat:20.905134,lng:106.631866},
+          {lat:20.905145,lng:106.632496},
+          {lat:20.904732,lng:106.632496},
+          {lat:20.904724,lng:106.631880}
+        ];
+
+        var sanbong = new google.maps.Polygon({
+          paths: latlng_sanbong,
+          strokeColor: '#339933',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#339933',
+          fillOpacity: 0.35
+        });
+
+        var latlng_duong = [
+          {lat:20.906148,lng:106.632706},
+          {lat:20.906043,lng:106.631219},
+          {lat:20.905314,lng:106.631114},
+          {lat:20.905320,lng:106.631403},
+          {lat:20.905790,lng:106.631436},
+          {lat:20.905849,lng:106.632900}
+        ];
+
+        var duong = new google.maps.Polygon({
+          paths: latlng_duong,
+          strokeColor: '#339933',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#339933',
+          fillOpacity: 0.35
+        });
+
+        duong.setMap(map);
+        sanbong.setMap(map);
+        bermudaTriangle.setMap(map);
+        baiphee.setMap(map);
+      }
+    </script>
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDnYiPim3y8CmQ1_t8slDZTSLnhXk0II7Q&callback=initMap">
+    </script>
+  </body>
+</html>
