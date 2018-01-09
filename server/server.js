@@ -107,8 +107,7 @@ io.on('connection', function (socket) {
       if(err){
         console.log(err);
       }else{
-        io.emit('session_step_into_checkpoint',{data:data});
-        console.log('update success');
+        io.emit('session_step_into_checkpoint',{data:data});      
       }
     });
 
@@ -124,13 +123,12 @@ io.on('connection', function (socket) {
         console.log(err);
       }else{
         io.emit('session_step_out_checkpoint',{data:data});
-        console.log('update state car out success');
       }
     });
 
   });
 
   socket.on('disconnect',function(){
-    console.log('a socket disconnect:'+socket.id);
+
   })
 });
