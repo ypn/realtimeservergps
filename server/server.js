@@ -35,17 +35,19 @@ io.on('connection', function (socket) {
   //new car tracking session
   socket.on('new_car_tracking_detected', function (data) {
     //get all checkponts
-    db.query("SELECT id FROM CHECKPOINTS",function(err,result){
+    db.query("SELECT id,maxtime FROM CHECKPOINTS",function(err,result){
       if(err){
         //Log lỗi
         console.log(err)
       }else{
         var checkpoints =[]
+        console.log('cai lozz');
         for(i = 0; i< result.length ; i++){
           var cp = {
             checkpointId: result[i].id,
+            max_time:result[i].maxtime,
             status:0,
-            time_start:'',
+            time_start:0,
             time_end:'',
             total_time:''
           }
@@ -107,7 +109,7 @@ io.on('connection', function (socket) {
       if(err){
         console.log(err);
       }else{
-        io.emit('session_step_into_checkpoint',{data:data});      
+        io.emit('session_step_into_checkpoint',{data:data});
       }
     });
 
@@ -128,7 +130,16 @@ io.on('connection', function (socket) {
 
   });
 
-  socket.on('disconnect',function(){
+  socket.on('stop_traking',function(data){
+    var sql_update = `UPDATE POSITIONS_TRACKING SET type= 0 WHERE id = ${data.sessionId}`;
+    db.query(sql_update,function(err,result){
+      if(err){
+        console.log(err);
+      }else{
+        io.emit('stop_tracking',{sessionId:data.sessionId});
+      }
+    });
 
-  })
+  });
+
 });
