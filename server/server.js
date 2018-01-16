@@ -41,7 +41,7 @@ io.on('connection', function (socket) {
         console.log(err)
       }else{
         var checkpoints =[]
-        console.log('cai lozz');
+
         for(i = 0; i< result.length ; i++){
           var cp = {
             checkpointId: result[i].id,
