@@ -51,11 +51,16 @@ io.on('connection', function (socket) {
             time_end:'',
             total_time:''
           }
+          
+          checkpoints.push(cp);
 
-          checkpoints[$result[i].id] = cp;
         }
 
+        console.log(checkpoints);
+
         var status = JSON.stringify(checkpoints);
+
+        console.log(status);
 
         var sql = `INSERT INTO POSITIONS_TRACKING (bienso,type,car_positions,status) VALUES('${data.bienso}',1,'[]','${status}')`;
         db.query(sql, function (err, result) {
