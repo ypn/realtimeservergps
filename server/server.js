@@ -51,8 +51,7 @@ io.on('connection', function (socket) {
             time_end:'',
             total_time:''
           }
-
-          checkpoints[$result[i].id] = cp;
+          checkpoints.push(cp);
         }
 
         var status = JSON.stringify(checkpoints);
