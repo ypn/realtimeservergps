@@ -51,7 +51,7 @@ io.on('connection', function (socket) {
             time_end:'',
             total_time:''
           }
-          
+                    
           checkpoints.push(cp);
 
         }
