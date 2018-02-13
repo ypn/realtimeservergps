@@ -1,11 +1,21 @@
 var mysql = require('mysql')
+var moment = require('moment')
 var app = require('http').createServer(handler)
 var io = require('socket.io')(app);
 var fs = require('fs');
-
 app.listen(3000,function(){
   console.log('listten on port 3000');
 });
+
+function getRandomColor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
 
 function handler (req, res) {
   fs.readFile(__dirname + '/index.html',
@@ -24,6 +34,7 @@ var db = mysql.createConnection({
     user: 'root',
     password:'phamnhuy151192',
     database: 'erp',
+    dateStrings:true,
     port:'3306'
 });
 
@@ -40,7 +51,7 @@ io.on('connection', function (socket) {
         //Log lỗi
         console.log(err)
       }else{
-        var checkpoints =[]
+        var checkpoints ={}
 
         for(i = 0; i< result.length ; i++){
           var cp = {
@@ -51,18 +62,16 @@ io.on('connection', function (socket) {
             time_end:'',
             total_time:''
           }
-                    
-          checkpoints.push(cp);
+
+          checkpoints['cp_' + result[i].id] = cp;
+
 
         }
+        let status = JSON.stringify(checkpoints);
 
-        console.log(checkpoints);
+        let color = getRandomColor();
 
-        var status = JSON.stringify(checkpoints);
-
-        console.log(status);
-
-        var sql = `INSERT INTO POSITIONS_TRACKING (bienso,type,car_positions,status) VALUES('${data.bienso}',1,'[]','${status}')`;
+        var sql = `INSERT INTO POSITIONS_TRACKING (bienso,type,car_positions,status,current_position,path_color) VALUES('${data.bienso}',1,'["{lat:${data.lat},lng:${data.lng}}"]','${status}','{lat:${data.lat},lng:${data.lng}}','${color}')`;
         db.query(sql, function (err, result) {
             if (err) {//log lỗi
               console.log(err);
@@ -72,13 +81,13 @@ io.on('connection', function (socket) {
                   id:`${result.insertId}`
                 });
 
-                var ss = `SELECT id,bienso,status FROM POSITIONS_TRACKING WHERE id = ${result.insertId}`;
+                var ss = `SELECT id,bienso,status,created_at,path_color FROM POSITIONS_TRACKING WHERE id = ${result.insertId}`;
 
-                db.query(ss,function(err,result){
-                  if(err){
-                    console.log(err);
+                db.query(ss,function(errr,resultt){
+                  if(errr){
+                    console.log(errr);
                   }else{
-                    io.emit('new_session_detected',{data:JSON.stringify(result[0])});
+                    io.emit('new_session_detected',{data:JSON.stringify(resultt[0]),position:{lat:data.lat,lng:data.lng}});
                   }
                 });
 
@@ -89,8 +98,7 @@ io.on('connection', function (socket) {
   });//new car tracking session
 
   socket.on('update_position',function(data){
-
-    var query = `UPDATE POSITIONS_TRACKING SET car_positions = JSON_ARRAY_APPEND(car_positions,'$','{lat:${data.lat},lng:${data.lng}}') WHERE ID = ${data.sessionId}` ;
+    var query = `UPDATE POSITIONS_TRACKING SET car_positions = JSON_ARRAY_APPEND(car_positions,'$','{lat:${data.lat},lng:${data.lng}}'), current_position = '{lat:${data.lat},lng:${data.lng}}' WHERE ID = ${data.sessionId}` ;
     var latlng = {
       lat:data.lat,
       lng:data.lng
@@ -102,13 +110,13 @@ io.on('connection', function (socket) {
       }
     });
 
-    io.emit('update_position',{marker:latlng});
+    io.emit('update_position',{marker:latlng,id:data.sessionId});
   });
 
   socket.on('session_step_into_checkpoint',function(data){
     //Cập nhật lại trạng thái của sesssion.
     var time_start = new Date();
-    var query = `UPDATE POSITIONS_TRACKING SET status = JSON_REPLACE(status,'$[${data.checkpointIndex}].status',1,'$[${data.checkpointIndex}].time_start','${time_start}') WHERE id = ${data.sessionId}`;
+    var query = `UPDATE POSITIONS_TRACKING SET status = JSON_REPLACE(status,'$[0].cp_${data.checkpointId}.status',1,'$[0].cp_${data.checkpointId}.time_start','${time_start}') WHERE id = ${data.sessionId}`;
 
     db.query(query,function(err,result){
       if(err){
@@ -123,7 +131,7 @@ io.on('connection', function (socket) {
   socket.on('session_step_out_checkpoint',function(data){
 
     var time_end = new Date();
-    var query = `UPDATE POSITIONS_TRACKING SET status = JSON_REPLACE(status,'$[${data.checkpointIndex}].status',2,'$[${data.checkpointIndex}].time_end','${time_end}','$[${data.checkpointIndex}].total_time','${data.total_time}') WHERE id = ${data.sessionId}`;
+    var query = `UPDATE POSITIONS_TRACKING SET status = JSON_REPLACE(status,'$[0].cp_${data.checkpointId}.status',2,'$[0].cp_${data.checkpointId}.time_end','${time_end}','$[0].cp_${data.checkpointId}.total_time','${data.total_time}') WHERE id = ${data.sessionId}`;
 
     db.query(query,function(err,result){
       if(err){
@@ -136,7 +144,11 @@ io.on('connection', function (socket) {
   });
 
   socket.on('stop_traking',function(data){
-    var sql_update = `UPDATE POSITIONS_TRACKING SET type= 0 WHERE id = ${data.sessionId}`;
+    console.log('=========STOP TRACKING==============')
+    console.log('session:' + data.sessionId);
+    console.log('====================================');
+    let mysqlTimestamp = moment(Date.now()).format('YYYY-MM-DD HH:mm:ss');
+    let sql_update = `UPDATE POSITIONS_TRACKING SET type= 0,ended_at = '${mysqlTimestamp}' WHERE id = ${data.sessionId}`;
     db.query(sql_update,function(err,result){
       if(err){
         console.log(err);
