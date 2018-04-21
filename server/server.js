@@ -4,7 +4,39 @@ var app = require('http').createServer(handler)
 var io = require('socket.io')(app);
 var fs = require('fs');
 app.listen(3000,function(){
-  console.log('listten on port 3000');
+console.log('\x1b[36m%s\x1b[0m',`
+ /$$    /$$                        /$$$$$                      /$$$$$$
+| $$   | $$                       |__  $$                     /$$__  $$
+| $$   | $$                          | $$                    | $$  \__/
+|  $$ / $$/       /$$$$$$            | $$       /$$$$$$      |  $$$$$$
+ \  $$ $$/       |______/       /$$  | $$      |______/       \____  $$
+  \  $$$/                      | $$  | $$                     /$$  \ $$
+   \  $/                       |  $$$$$$/                    |  $$$$$$/
+    \_/                         \______/                      \______/
+`)
+console.log('\x1b[31m%s\x1b[0m',`
+      ███████████████████████████    ███████████████████████████
+      ███████▀▀▀░░░░░░░▀▀▀███████    ███████▀▀▀░░░░░░░▀▀▀███████
+      ████▀░░░░░░░░░░░░░░░░░▀████    ████▀░░░░░░░░░░░░░░░░░▀████
+      ███│░░░░░░░░░░░░░░░░░░░│███    ███│░░░░░░░░░░░░░░░░░░░│███
+      ██▌│░░░░░░░░░░░░░░░░░░░│▐██    ██▌│░░░░░░░░░░░░░░░░░░░│▐██
+      ██░└┐░░░░░░░░░░░░░░░░░┌┘░██    ██░└┐░░░░░░░░░░░░░░░░░┌┘░██
+      ██░░└┐░░░░░░░░░░░░░░░┌┘░░██    ██░░└┐░░░░░░░░░░░░░░░┌┘░░██
+      ██░░┌┘▄▄▄▄▄░░░░░▄▄▄▄▄└┐░░██    ██░░┌┘▄▄▄▄▄░░░░░▄▄▄▄▄└┐░░██
+      ██▌░│██████▌░░░▐██████│░▐██    ██▌░│██████▌░░░▐██████│░▐██
+      ███░│▐███▀▀░░▄░░▀▀███▌│░███    ███░│▐███▀▀░░▄░░▀▀███▌│░███
+      ██▀─┘░░░░░░░▐█▌░░░░░░░└─▀██    ██▀─┘░░░░░░░▐█▌░░░░░░░└─▀██
+      ██▄░░░▄▄▄▓░░▀█▀░░▓▄▄▄░░░▄██    ██▄░░░▄▄▄▓░░▀█▀░░▓▄▄▄░░░▄██
+      ████▄─┘██▌░░░░░░░▐██└─▄████    ████▄─┘██▌░░░░░░░▐██└─▄████
+      █████░░▐█─┬┬┬┬┬┬┬─█▌░░█████    █████░░▐█─┬┬┬┬┬┬┬─█▌░░█████
+      ████▌░░░▀┬┼┼┼┼┼┼┼┬▀░░░▐████    ████▌░░░▀┬┼┼┼┼┼┼┼┬▀░░░▐████
+      █████▄░░░└┴┴┴┴┴┴┴┘░░░▄█████    █████▄░░░└┴┴┴┴┴┴┴┘░░░▄█████
+      ███████▄░░░░░░░░░░░▄███████    ███████▄░░░░░░░░░░░▄███████
+      ██████████▄▄▄▄▄▄▄██████████    ██████████▄▄▄▄▄▄▄██████████
+      ███████████████████████████    ███████████████████████████
+  `);
+  console.log('Initialize successful');
+  console.log('........');
 });
 
 function getRandomColor() {
@@ -29,73 +61,108 @@ function handler (req, res) {
   });
 }
 
-var db = mysql.createConnection({
-    host: '127.0.0.1',
+// var db = mysql.createConnection({
+//     host: '127.0.0.1',
+//     user: 'root',
+//     password:'phamnhuy151192',
+//     database: 'erp',
+//     dateStrings:true,
+//     port:'3306'
+// });
+//
+// db.connect(function(err){
+//     if (err) console.log(err)
+// });
+
+var db_config = {
+  host: '127.0.0.1',
     user: 'root',
-    password:'phamnhuy151192',
-    database: 'erp',
+    password: 'phamnhuy151192',
+    database: 'realtime_location_tracking',
     dateStrings:true,
     port:'3306'
-});
+};
 
-db.connect(function(err){
-    if (err) console.log(err)
-});
+var db;
+
+function handleDisconnect() {
+  db = mysql.createConnection(db_config); // Recreate the connection, since
+                                                  // the old one cannot be reused.
+
+  db.connect(function(err) {              // The server is either down
+    if(err) {                                     // or restarting (takes a while sometimes).
+      console.log('error when connecting to db:', err);
+      setTimeout(handleDisconnect, 2000); // We introduce a delay before attempting to reconnect,
+    }                                     // to avoid a hot loop, and to allow our node script to
+  });                                     // process asynchronous requests in the meantime.
+                                          // If you're also serving http, display a 503 error.
+  db.on('error', function(err) {
+    //console.log('db error', err);
+    if(err.code === 'PROTOCOL_CONNECTION_LOST') { // Connection to the MySQL server is usually
+      handleDisconnect();                         // lost due to either server restart, or a
+    } else {                                      // connnection idle timeout (the wait_timeout
+      throw err;                                  // server variable configures this)
+    }
+  });
+}
+
+handleDisconnect();
 
 io.on('connection', function (socket) {
   //new car tracking session
   socket.on('new_car_tracking_detected', function (data) {
     //get all checkponts
-    db.query("SELECT id,maxtime FROM CHECKPOINTS",function(err,result){
-      if(err){
-        //Log lỗi
-        console.log(err)
-      }else{
-        var checkpoints ={}
 
-        for(i = 0; i< result.length ; i++){
-          var cp = {
-            checkpointId: result[i].id,
-            max_time:result[i].maxtime,
-            status:0,
-            time_start:0,
-            time_end:'',
-            total_time:''
-          }
-          checkpoints.push(cp);
-        }
-        let status = JSON.stringify(checkpoints);
+    var checkpoints = JSON.parse(data.checkpoint);
 
-        let color = getRandomColor();
+    var listCp = [];
 
-        var sql = `INSERT INTO POSITIONS_TRACKING (bienso,type,car_positions,status,current_position,path_color) VALUES('${data.bienso}',1,'["{lat:${data.lat},lng:${data.lng}}"]','${status}','{lat:${data.lat},lng:${data.lng}}','${color}')`;
-        db.query(sql, function (err, result) {
-            if (err) {//log lỗi
-              console.log(err);
-            }else{
-                socket.emit('create_tracking_session',{
-                  status:201,
-                  id:`${result.insertId}`
-                });
-
-                var ss = `SELECT id,bienso,status,created_at,path_color FROM POSITIONS_TRACKING WHERE id = ${result.insertId}`;
-
-                db.query(ss,function(errr,resultt){
-                  if(errr){
-                    console.log(errr);
-                  }else{
-                    io.emit('new_session_detected',{data:JSON.stringify(resultt[0]),position:{lat:data.lat,lng:data.lng}});
-                  }
-                });
-
-            }
-        });
+    for(i=0;i< checkpoints.length ; i++){
+      var cp = {
+        checkpointId: checkpoints[i].id,
+        max_time:checkpoints[i].time,
+        status:0,
+        time_start:'',
+        time_end:'',
+        total_time:0
       }
-    });//get all checkpoints
+
+      listCp.push(cp)
+
+    }
+    let status = JSON.stringify(listCp);
+
+    let color = getRandomColor();
+
+    var sql = `INSERT INTO TRACKING_LOGGER (object_tracking,type,path,status,current_position,path_color,mode_id,object_id) VALUES('${data.object_name}',1,'[]','${status}','{lat:${data.lat},lng:${data.lng}}','${color}','${data.mode_id}','${data.object_id}')`;
+    db.query(sql, function (err, result) {
+        if (err) {//log lỗi
+          console.log(err);
+        }else{
+            socket.emit('create_tracking_session',{
+              status:201,
+              id:`${result.insertId}`
+            });
+
+            var ss = `SELECT * FROM TRACKING_LOGGER WHERE id = ${result.insertId}`;
+
+            db.query(ss,function(errr,resultt){
+              if(errr){
+                console.log(errr);
+              }else{
+                io.emit('new_session_detected_in_mode_' + data.mode_id,{data:JSON.stringify(resultt[0])});
+                io.emit('start_new_marker',{data:JSON.stringify(resultt[0])});
+              }
+            });
+
+        }
+    });
+
+
   });//new car tracking session
 
-  socket.on('update_position',function(data){
-    var query = `UPDATE POSITIONS_TRACKING SET car_positions = JSON_ARRAY_APPEND(car_positions,'$','{lat:${data.lat},lng:${data.lng}}'), current_position = '{lat:${data.lat},lng:${data.lng}}' WHERE ID = ${data.sessionId}` ;
+  socket.on('update_location',function(data){
+    var query = `UPDATE TRACKING_LOGGER SET path = JSON_ARRAY_APPEND(path,'$','{lat:${data.lat},lng:${data.lng}}'), current_position = '{lat:${data.lat},lng:${data.lng}}' WHERE ID = ${data.sessionId}` ;
     var latlng = {
       lat:data.lat,
       lng:data.lng
@@ -107,53 +174,52 @@ io.on('connection', function (socket) {
       }
     });
 
-    io.emit('update_position',{marker:latlng,id:data.sessionId});
+    io.emit('location_change',{position:latlng,id:data.sessionId});
   });
 
-  socket.on('session_step_into_checkpoint',function(data){
-    //Cập nhật lại trạng thái của sesssion.
-    var time_start = new Date();
-    var query = `UPDATE POSITIONS_TRACKING SET status = JSON_REPLACE(status,'$[0].cp_${data.checkpointId}.status',1,'$[0].cp_${data.checkpointId}.time_start','${time_start}') WHERE id = ${data.sessionId}`;
+  socket.on('step_into_checkpoint',function(data){
+    //Cập nhật lại trạng thái của sesssion.   
 
+    var time_start = new Date();
+    var query = `UPDATE TRACKING_LOGGER SET status = JSON_REPLACE(status,'$[${data.checkpointIndex}].status',1,'$[${data.checkpointIndex}].time_start','${time_start}') WHERE id = ${data.sessionId}`;
     db.query(query,function(err,result){
       if(err){
         console.log(err);
       }else{
-        io.emit('session_step_into_checkpoint',{data:data});
+        io.emit('step_into_checkpoint',{data});
       }
     });
 
   });
 
   socket.on('session_step_out_checkpoint',function(data){
-
     var time_end = new Date();
-    var query = `UPDATE POSITIONS_TRACKING SET status = JSON_REPLACE(status,'$[0].cp_${data.checkpointId}.status',2,'$[0].cp_${data.checkpointId}.time_end','${time_end}','$[0].cp_${data.checkpointId}.total_time','${data.total_time}') WHERE id = ${data.sessionId}`;
+    var query = `UPDATE TRACKING_LOGGER SET status = JSON_REPLACE(status,'$[${data.checkpointIndex}].status',2,'$[${data.checkpointIndex}].time_end','${time_end}','$[${data.checkpointIndex}].total_time','${data.total_time}') WHERE id = ${data.sessionId}`;
 
     db.query(query,function(err,result){
       if(err){
         console.log(err);
       }else{
-        io.emit('session_step_out_checkpoint',{data:data});
+        io.emit('session_step_out_checkpoint',{data});
       }
     });
 
   });
 
   socket.on('stop_traking',function(data){
-    console.log('=========STOP TRACKING==============')
-    console.log('session:' + data.sessionId);
-    console.log('====================================');
+    if(data == "undefined"){
+      return;
+    }
     let mysqlTimestamp = moment(Date.now()).format('YYYY-MM-DD HH:mm:ss');
-    let sql_update = `UPDATE POSITIONS_TRACKING SET type= 0,ended_at = '${mysqlTimestamp}' WHERE id = ${data.sessionId}`;
+    let sql_update = `UPDATE TRACKING_LOGGER SET type= 0,ended_at = '${mysqlTimestamp}' WHERE id = ${data.sessionId}`;
     db.query(sql_update,function(err,result){
       if(err){
         console.log(err);
       }else{
-        io.emit('stop_tracking',{sessionId:data.sessionId});
+        io.emit('stop_tracking_in_' + data.mode_id,{sessionId:data.sessionId});
+        io.emit('remove_marker',{sessionId:data.sessionId});
       }
     });
-
   });
 
 });
