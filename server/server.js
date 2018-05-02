@@ -178,8 +178,7 @@ io.on('connection', function (socket) {
   });
 
   socket.on('step_into_checkpoint',function(data){
-    //Cập nhật lại trạng thái của sesssion.   
-
+    //Cập nhật lại trạng thái của sesssion.  
     var time_start = new Date();
     var query = `UPDATE TRACKING_LOGGER SET status = JSON_REPLACE(status,'$[${data.checkpointIndex}].status',1,'$[${data.checkpointIndex}].time_start','${time_start}') WHERE id = ${data.sessionId}`;
     db.query(query,function(err,result){
